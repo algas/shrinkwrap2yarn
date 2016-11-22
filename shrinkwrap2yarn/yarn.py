@@ -21,7 +21,7 @@ class YarnLock:
         ]
         if len(self.dependencies) > 0:
             strs.append('  dependencies:')
-            strs.extend(['    {0} "{1}"'.format(d.name, d.from_) for d in self.dependencies])
+            strs.extend(['    "{0}" "{1}"'.format(d.name, d.from_) for d in self.dependencies])
         return '\n'.join(strs)
 
     def __str__(self):
@@ -30,15 +30,18 @@ class YarnLock:
 class YarnLockFactory:
     ## Yarn Lock Factory
     def _merge(self, yarn_elements):
+        def _get_name(yarn):
+            if yarn.from_ is None:
+                return '"{0}@{1}"'.format(yarn.name, yarn.version)
+            elif yarn.from_.startswith('git:') or yarn.from_.startswith('https:'):
+                return '"{0}@{1}"'.format(yarn.name, yarn.from_)
+            return '"{0}"'.format(yarn.from_)
         yarns = {}
         for yarn in yarn_elements:
             if yarn.resolved not in yarns:
-                yarns[yarn.resolved] = {'names':set([yarn.from_]), 'version':yarn.version, 'dependencies':yarn.dependencies}
+                yarns[yarn.resolved] = {'names':set([_get_name(yarn)]), 'version':yarn.version, 'dependencies':yarn.dependencies}
             else:
-                if yarn.from_ is None:
-                    yarns[yarn.resolved]['names'].add('{0}@{1}'.format(yarn.name, yarn.version))
-                else:
-                    yarns[yarn.resolved]['names'].add(yarn.from_)
+                yarns[yarn.resolved]['names'].add(_get_name(yarn))
         return yarns
 
     def _locks(self, yarns):
