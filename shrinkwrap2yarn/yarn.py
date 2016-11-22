@@ -4,16 +4,21 @@ import logging
 ## Definition of YarnElement
 YarnElement = namedtuple('YarnElement', 'name from_ version resolved dependencies')
 ## Definition of YarnDependency
-YarnDependency = namedtuple('YarnDependency', 'name from_')
+YarnDependency = namedtuple('YarnDependency', 'name from_ version')
 
 class YarnLock:
     def __init__(self, names, version, resolved, dependencies=[]):
         self.names = names
         self.version = version
-        self.resolved = resolved
+        self.resolved = resolved.replace('npmjs.org','yarnpkg.com') if resolved else resolved
         self.dependencies = dependencies
 
     def __repl__(self):
+        def _dep_version(d):
+            if d.from_ and d.from_.startswith('git:'):
+                return d.from_
+            return d.version
+
         strs = [
             ', '.join(self.names) + ':',
             '  version "{0}"'.format(self.version),
@@ -21,7 +26,8 @@ class YarnLock:
         ]
         if len(self.dependencies) > 0:
             strs.append('  dependencies:')
-            strs.extend(['    "{0}" "{1}"'.format(d.name, d.from_) for d in self.dependencies])
+            strs.extend(['    "{0}" "{1}"'.format(d.name, _dep_version(d)) for d in self.dependencies])
+        strs.append('')
         return '\n'.join(strs)
 
     def __str__(self):
@@ -33,7 +39,7 @@ class YarnLockFactory:
         def _get_name(yarn):
             if yarn.from_ is None:
                 return '"{0}@{1}"'.format(yarn.name, yarn.version)
-            elif yarn.from_.startswith('git:') or yarn.from_.startswith('https:'):
+            elif yarn.from_.startswith('git:'):
                 return '"{0}@{1}"'.format(yarn.name, yarn.from_)
             return '"{0}"'.format(yarn.from_)
         yarns = {}

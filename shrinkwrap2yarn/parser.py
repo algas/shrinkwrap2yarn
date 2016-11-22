@@ -27,7 +27,7 @@ class ShrinkwrapParser:
             for k, v in data['dependencies'].items():
                 v['name'] = k
                 yarns = self._parse(v, yarns)
-                dependencies.append(yarn.YarnDependency(k, _from(v)))
+                dependencies.append(yarn.YarnDependency(k, _from(v), v.get('version', None)))
         return dependencies, yarns
 
     def print_yarn(self, parsed):
